@@ -1,0 +1,89 @@
+                    password = generateRandomString(8);
+                    final url = 'https://915f-160-156-223-236.ngrok.io/ajouter_employee';
+
+                    final response = await http.post(
+                      Uri.parse(url),
+                      headers: {'Content-Type': 'application/json'},
+                      body: jsonEncode({
+                        'email': user.email,
+                        'mot_de_passe': password,
+                        'cin': cin,
+                        'nom': user.displayName,
+                        'prenom': '',
+                        'role': 'user',
+                        'image': user.photoUrl
+                      }),
+                    );
+
+                    if (response.statusCode == 201) {
+                      // Successfully registered as a new user
+                      final response = await http.post(
+                        Uri.parse('https://915f-160-156-223-236.ngrok.io/get_employee_id'),
+                        headers: <String, String>{
+                          'Content-Type': 'application/json; charset=UTF-8',
+                        },
+                        body: jsonEncode(<String, dynamic>{
+                          'cin': cin, // Replace with the actual CIN
+                          'email': user.email, // Replace with the actual email
+                        }),
+                      );
+                      if (response.statusCode == 200) {
+                        final jsonResponse = json.decode(response.body);
+                        final employeeId = jsonResponse['employee_id'];
+
+                        Get.to(UserScreen(), arguments: {
+                          'email': user.email,
+                          'nom': user.displayName,
+                          'prenom': '',
+                          'cin': cin,
+                          'image': user.photoUrl,
+                          'role': 'user',
+                          'id': employeeId,
+                        });
+                      }
+                    } else {
+                      // Failed to register, try to log in
+                      final loginUrl = 'https://915f-160-156-223-236.ngrok.io/login';
+                      final loginResponse = await http.post(
+                        Uri.parse(loginUrl),
+                        headers: {'Content-Type': 'application/json'},
+                        body: jsonEncode({
+                          'email': user.email,
+                          'mot_de_passe': password,
+                        }),
+                      );
+
+                      if (loginResponse.statusCode == 200) {
+                        Map<String, dynamic> jsonResponse = jsonDecode(
+                            loginResponse.body);
+
+                        String role = jsonResponse['role'];
+                        if (role == 'user') {
+                          Get.to(UserScreen(), arguments: {
+                            'email': jsonResponse['email'],
+                            'nom': jsonResponse['nom'],
+                            'prenom': jsonResponse['prenom'],
+                            'cin': jsonResponse['cin'],
+                            'image': jsonResponse['image'],
+                            'role': jsonResponse['role'],
+                            'id': jsonResponse['id']
+                          });
+                        } else if (role == 'admin') {
+                          Get.to(AcceuilScreen(), arguments: {
+                            'email': jsonResponse['email'],
+                            'nom': jsonResponse['nom'],
+                            'prenom': jsonResponse['prenom'],
+                            'cin': jsonResponse['cin'],
+                            'image': jsonResponse['image'],
+                            'role': jsonResponse['role'],
+                            'id': jsonResponse['id']
+                          });
+                        } else {
+                          //_showAlertFailedAcess(context);
+                          print('cvp1');
+                        }
+                      } else {
+                        print('cvp');
+                      }
+                    }
+                  }

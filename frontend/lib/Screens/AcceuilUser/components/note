@@ -1,0 +1,107 @@
+import 'package:flutter/material.dart';
+import 'package:stage_project/Screens/AcceuilUser/components/background.dart';
+import 'package:get/get.dart'; // Importez le package Get
+import 'dart:io';
+
+class Body extends StatefulWidget {
+  //final String email; // Ajoutez cette propriété
+
+  //Body({required this.email}); // Mettez à jour le constructeur
+  final String email;
+  final String nom;
+  final String prenom;
+  final String cin;
+
+  Body({
+    required this.email,
+    required this.nom,
+    required this.prenom,
+    required this.cin
+  });
+
+  @override
+  _BodyState createState() => _BodyState();
+}
+
+class _BodyState extends State<Body> {
+  @override
+  Widget build(BuildContext context) {
+    Size size = MediaQuery.of(context).size;
+    String email = Get.arguments['email'];
+    String cin = Get.arguments['cin'];
+    String nom = Get.arguments['nom'];
+    String prenom = Get.arguments['prenom'];
+
+    return Background(
+      child: SingleChildScrollView(
+        child: Column(
+
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: <Widget>[
+            Image.asset(
+              "assets/images/bb.jpg",
+              width: size.width * 0.35,
+            ),
+
+            Text(
+              "Email : ${widget.email}",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            Text(
+              "Nom : ${widget.nom}",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            Text(
+              "Prenom : ${widget.prenom}",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            Text(
+              "CIN : ${widget.cin}",
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            //Text("Logged in as: ${widget.email}"), // Utilisation de l'email passé en paramètre
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+==========================================================================================================================================
+
+          bool isDarkMode = false; // Initialisé à false pour le mode clair
+
+          SwitchListTile(
+                title: Text("Mode Sombre"),
+                value: isDarkMode,
+                onChanged: (value) {
+                  setState(() {
+                    isDarkMode = value;
+                    // Appel à la fonction pour changer le thème ici
+                    if (isDarkMode) {
+                      // Changer le thème en mode sombre
+                      Get.changeTheme(ThemeData.dark());
+                    } else {
+                      // Changer le thème en mode clair
+                      Get.changeTheme(ThemeData.light());
+                    }
+                  });
+                },
+              ),
