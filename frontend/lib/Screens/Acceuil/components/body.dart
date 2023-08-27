@@ -12,6 +12,7 @@ import 'package:stage_project/Screens/Login/login_screen.dart';
 import 'package:stage_project/Screens/Settings/settings.dart';
 import 'package:stage_project/Screens/chart/Chart.dart';
 import 'package:stage_project/Screens/notifquestion/notif_quest.dart';
+import 'package:stage_project/Screens/projectmanager/project_management.dart';
 import 'package:stage_project/components/edit_button.dart';
 import 'package:stage_project/components/menu_profil.dart';
 import 'dart:io';
@@ -375,6 +376,21 @@ class _BodyState extends State<Body> {
                 title: "Chart",
                 icon: LineAwesomeIcons.area_chart,
                 onPress: () => Get.to(Chart()),
+                isDarkMode: isDarkMode,
+              ),
+              UserScreenMenu(
+                title: "project management",
+                icon: LineAwesomeIcons.project_diagram,
+                onPress: () => Get.to(ProjectManager(),
+                    arguments: {
+                      'email': email,
+                      'nom': nom,
+                      'prenom': prenom,
+                      'cin': cin,
+                      'image': image,
+                      'role': role,
+                      'id': id
+                    }),
                 isDarkMode: isDarkMode,
               ),
               Divider(),

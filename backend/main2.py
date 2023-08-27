@@ -1,3 +1,4 @@
+import datetime
 from flask import Flask, request, jsonify, session
 from flaskext.mysql import MySQL
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -134,6 +135,63 @@ def ajouter_employee():
     insert_employee(cin, email, nom, prenom, mot_de_passe, role, image)
         
     return jsonify({"message": "Employé enregistré avec succès!"}), 201
+
+
+
+@app.route('/afficher_employee/<int:employee_id>', methods=['GET'])
+@swag_from({
+    'tags': ['Employees'],
+    'summary': 'Afficher les détails d\'un employé',
+    'parameters': [
+        {
+            'name': 'employee_id',
+            'description': 'ID de l\'employé',
+            'in': 'path',
+            'required': True,
+            'type': 'integer'
+        }
+    ],
+    'responses': {
+        200: {
+            'description': 'Détails de l\'employé',
+            'schema': {
+                'type': 'object',
+                'properties': {
+                    'cin': {'type': 'string'},
+                    'email': {'type': 'string'},
+                    'nom': {'type': 'string'},
+                    'prenom': {'type': 'string'},
+                    'role': {'type': 'string'},
+                    'image': {'type': 'string'}
+                    # Ajoutez d'autres propriétés ici si nécessaire
+                }
+            }
+        },
+        404: {
+            'description': 'Aucun employé trouvé avec cet ID'
+        }
+    }
+})
+def afficher_employee(employee_id):
+    conn, cursor = get_cursor_and_connection()
+    cursor.execute("SELECT cin, email, lastname, firstname, role, image FROM employee WHERE id = %s", (employee_id,))
+    employee = cursor.fetchone()
+    close_connection(conn, cursor)
+    
+    if employee:
+        employee_data = {
+            'cin': employee[0],
+            'email': employee[1],
+            'nom': employee[2],
+            'prenom': employee[3],
+            'role': employee[4],
+            'image': employee[5]
+        }
+        return jsonify(employee_data), 200
+    else:
+        return jsonify({"message": "Aucun employé trouvé avec cet ID"}), 404
+
+
 
 @app.route('/login', methods=['POST'])
 @swag_from({
@@ -633,6 +691,7 @@ def envoyer_question():
     close_connection(conn, cursor)
     notification()
     return jsonify(message="Question envoyée avec succès"), 201
+
 @app.route('/notification', methods=['GET'])
 def notification():
     conn, cursor = get_cursor_and_connection()
@@ -958,5 +1017,255 @@ def get_evaluations():
 
     return jsonify({"evaluations": evaluation_data})
 
+@app.route('/get_employee_id', methods=['POST'])
+def get_employee_id():
+    data = request.json
+    cin = data.get('cin')
+    email = data.get('email')
+
+    conn, cursor = get_cursor_and_connection()
+
+    if cin:
+        cursor.execute("SELECT id FROM employee WHERE cin = %s", (cin,))
+    elif email:
+        cursor.execute("SELECT id FROM employee WHERE email = %s", (email,))
+    else:
+        close_connection(conn, cursor)
+        return jsonify({"message": "Fournissez soit le numéro CIN, soit l'email de l'employé"}), 400
+
+    employee_id = cursor.fetchone()
+    close_connection(conn, cursor)
+
+    if employee_id:
+        return jsonify({"id": employee_id[0]}), 200
+    else:
+        return jsonify({"message": "Employé non trouvé"}), 404
+
+@app.route('/verif', methods=['POST'])
+def verif():
+    data = request.json
+    email = data.get('email')
+
+    conn, cursor = get_cursor_and_connection()
+    cursor.execute("SELECT cin, email, password, lastname, firstname, role, image, id FROM employee WHERE email = %s", (email))
+    user = cursor.fetchone()
+    close_connection(conn, cursor)
+
+    if user:
+        session['user'] = {
+            'cin': user[0],
+            'email': user[1],
+            'nom': user[4],
+            'prenom': user[3],
+            'role': user[5],
+            'image': user[6],
+            'id': user[7]
+        }
+        return jsonify(session['user']), 200
+    else:
+        return jsonify("Identifiants invalides"), 405
+    
+@app.route('/ajouter_projet', methods=['POST'])
+@swag_from({
+    'tags': ['Projects'],
+    'summary': 'Ajouter un nouveau projet',
+    'parameters': [
+        {
+            'name': 'date_debut',
+            'description': 'Date de début du projet',
+            'in': 'formData',
+            'required': True,
+            'type': 'string'  # You can adjust the data type as needed
+        },
+        {
+            'name': 'date_fin',
+            'description': 'Date de fin du projet',
+            'in': 'formData',
+            'required': True,
+            'type': 'string'  # You can adjust the data type as needed
+        },
+        {
+            'name': 'sujet',
+            'description': 'Sujet du projet',
+            'in': 'formData',
+            'required': True,
+            'type': 'string'
+        },
+        {
+            'name': 'ingenieurs',
+            'description': 'Liste des ingénieurs affectés (liste de CINs)',
+            'in': 'formData',
+            'required': True,
+            'type': 'array',
+            'items': {
+                'type': 'string'
+            }
+        }
+    ],
+    'responses': {
+        201: {
+            'description': 'Projet enregistré avec succès',
+            'schema': {
+                'type': 'object',
+                'properties': {
+                    'message': {
+                        'type': 'string'
+                    }
+                }
+            }
+        },
+        400: {
+            'description': 'Erreur lors de l\'enregistrement du projet'
+        }
+    }
+})
+def ajouter_projet():
+    data = request.json
+    date_debut = data.get('date_debut')
+    date_fin = data.get('date_fin')
+    sujet = data.get('sujet')
+    employees = data.get('employees')
+
+    try:
+        conn, cursor = get_cursor_and_connection()
+        cursor.execute("INSERT INTO projet (date_debut, date_fin, sujet) VALUES (%s, %s, %s)",
+                       (date_debut, date_fin, sujet))
+        projet_id = cursor.lastrowid
+
+        for employee in employees:
+            cursor.execute("INSERT INTO projet_ingenieur (projet_id, employee_id) VALUES (%s, %s)",
+                           (projet_id, employee))
+
+        conn.commit()
+        close_connection(conn, cursor)
+        return jsonify({"message": "Projet enregistré avec succès!", "id": projet_id}), 201
+    except Exception as e:
+        return jsonify(error=str(e)), 400
+
+
+@app.route('/liste_employees', methods=['GET'])
+def liste_employees():
+    conn, cursor = get_cursor_and_connection()
+    cursor.execute("SELECT id, lastname, firstname,image FROM employee")
+    employees = cursor.fetchall()
+    close_connection(conn, cursor)
+
+    employee_list = []
+    for emp in employees:
+        emp_dict = {
+            'id': emp[0],
+            'lastname': emp[1],
+            'firstname': emp[2],
+            'image': emp[3]
+
+        }
+        employee_list.append(emp_dict)
+
+    return jsonify(employee_list)
+
+@app.route('/ajouter_tache', methods=['POST'])
+@swag_from({
+    'tags': ['Tasks'],
+    'summary': 'Ajouter une nouvelle tâche pour un projet et un employé',
+    'parameters': [
+        {
+            'name': 'projet_id',
+            'description': 'ID du projet auquel la tâche est associée',
+            'in': 'formData',
+            'required': True,
+            'type': 'integer'
+        },
+        {
+            'name': 'employee_id',
+            'description': 'ID de l\'employé auquel la tâche est assignée',
+            'in': 'formData',
+            'required': True,
+            'type': 'integer'
+        },
+        {
+            'name': 'description',
+            'description': 'Description de la tâche',
+            'in': 'formData',
+            'required': True,
+            'type': 'string'
+        }
+    ],
+    'responses': {
+        201: {
+            'description': 'Tâche enregistrée avec succès',
+            'schema': {
+                'type': 'object',
+                'properties': {
+                    'message': {
+                        'type': 'string'
+                    }
+                }
+            }
+        },
+        400: {
+            'description': 'Erreur lors de l\'enregistrement de la tâche'
+        }
+    }
+})
+def ajouter_tache():
+    data = request.json
+    projet_id = data.get('projet_id')
+    employee_id = data.get('employee_id')
+    date_debut = data.get('date_debut')
+    date_fin = data.get('date_fin')
+    description = data.get('description')
+    date_creation = datetime.date.today()  # Date de création actuelle
+
+    try:
+        conn, cursor = get_cursor_and_connection()
+
+        # Vérifier si l'employé est associé au projet
+        cursor.execute("SELECT * FROM projet_ingenieur WHERE projet_id = %s AND employee_id = %s", (projet_id, employee_id))
+        relation_exists = cursor.fetchone()
+
+        if not relation_exists:
+            return jsonify({"message": "L'employé n'est pas associé à ce projet."}), 400
+
+        cursor.execute("INSERT INTO tache (projet_id, employee_id, date_debut, date_fin, description, date_creation) VALUES (%s, %s, %s, %s, %s, %s)",
+                       (projet_id, employee_id, date_debut, date_fin, description, date_creation))
+
+        conn.commit()
+        close_connection(conn, cursor)
+        return jsonify({"message": "Tâche enregistrée avec succès!"}), 201
+    except Exception as e:
+        return jsonify(error=str(e)), 400
+@app.route('/afficher_taches_par_employee/<string:employee_cin>', methods=['GET'])
+def afficher_taches_par_employee(employee_cin):
+    conn, cursor = get_cursor_and_connection()
+
+    # Récupérer les tâches et projets associés à l'employé
+    cursor.execute("SELECT projet.sujet, tache.description, tache.date_debut, tache.date_fin "
+                   "FROM projet "
+                   "JOIN tache ON tache.projet_id = projet.id "
+                   "WHERE tache.employee_id = (SELECT id FROM employee WHERE cin = %s)", (employee_cin,))
+    
+    tasks_and_projects = cursor.fetchall()
+    close_connection(conn, cursor)
+
+    if tasks_and_projects:
+        result = []
+        current_project = None
+        current_tasks = []
+
+        for project, task, date_debut, date_fin in tasks_and_projects:
+            if project != current_project:
+                if current_project:
+                    result.append({'projet_sujet': current_project, 'taches': current_tasks})
+                current_project = project
+                current_tasks = []
+
+            current_tasks.append({'tache_description': task, 'tache_date_debut': date_debut, 'tache_date_fin': date_fin})
+
+        if current_project:
+            result.append({'projet_sujet': current_project, 'taches': current_tasks})
+
+        return jsonify({'taches_projets': result}), 200
+    else:
+        return jsonify({"message": "Employé non trouvé ou non associé à des tâches ou des projets"}), 404
 if __name__ == '__main__':
     app.run(debug=True)

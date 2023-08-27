@@ -1,0 +1,186 @@
+import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:stage_project/Screens/tasks_calendar/components/background.dart';
+import 'package:table_calendar/table_calendar.dart';
+
+class Body extends StatefulWidget {
+  final String cin;
+
+  Body({
+    required this.cin,
+  });
+
+  @override
+  _BodyState createState() => _BodyState();
+}
+
+class _BodyState extends State<Body> {
+  int _currentIndex = 0; // Index of the selected tab
+  List<Task> tasks = [];
+  int currentPage = 1;
+  int itemsPerPage = 10; // Nombre d'éléments par page
+  Widget _getTabContent() {
+    switch (_currentIndex) {
+      case 0:
+        //return DoingContent();
+      case 1:
+        //return DoneContent();
+      default:
+        return Container();
+    }
+  }
+  Future<void> fetchTasks() async {
+    final response = await http.get(
+      Uri.parse(
+        'https://5e66-160-159-254-108.ngrok.io/afficher_taches_par_employee/${widget.cin}?page=$currentPage&per_page=$itemsPerPage',
+      ),
+    );
+
+    if (response.statusCode == 200) {
+      final data = json.decode(response.body);
+      final List<Task> newTasks = []; // Create a new list for the current page's tasks
+      for (var entry in data['taches_projets']) {
+        final project = entry['projet_sujet'];
+        final projectTasks = List<Map<String, dynamic>>.from(entry['taches']);
+        for (var taskData in projectTasks) {
+          final task = Task(
+            project: project,
+            description: taskData['tache_description'],
+            dateDebut: taskData['tache_date_debut'],
+            dateFin: taskData['tache_date_fin'],
+          );
+          newTasks.add(task); // Add tasks to the new list
+        }
+      }
+      setState(() {
+        tasks.addAll(newTasks); // Add the new tasks to the existing list
+      });
+    } else {
+      print('Failed to fetch tasks');
+    }
+  }
+
+  void nextPage() {
+    setState(() {
+      currentPage++;
+    });
+    fetchTasks(); // Charger les tâches de la page suivante
+  }
+
+  void previousPage() {
+    if (currentPage > 1) {
+      setState(() {
+        currentPage--;
+      });
+      fetchTasks(); // Charger les tâches de la page précédente
+    }
+  }
+  @override
+  void initState() {
+    super.initState();
+    fetchTasks();
+  }
+  @override
+  Widget build(BuildContext context) {
+    Size size = MediaQuery
+        .of(context)
+        .size;
+    CalendarFormat _calendarFormat = CalendarFormat.month;
+    DateTime _selectedDay = DateTime.now();
+    DateTime _focusedDay = DateTime.now();
+    return Background(
+      child: Column(
+        children: [
+          Expanded(
+            child:SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: DataTable(
+                headingRowHeight: 50,
+                columns: [
+                  DataColumn(label: Text('Project')),
+                  DataColumn(label: Text('Description')),
+                  DataColumn(label: Text('Start Date')),
+                  DataColumn(label: Text('End Date')),
+                ],
+                rows: tasks.map((task) {
+                  return DataRow(
+                    cells: [
+                      DataCell(Text(task.project)),
+                      DataCell(Text(task.description)),
+                      DataCell(Text(task.dateDebut)),
+                      DataCell(Text(task.dateFin)),
+                    ],
+                  );
+                }).toList(),
+              ),
+            ),
+          ),
+          // Your navigation bar at the bottom
+          TableCalendar(
+            firstDay: DateTime.now(),
+            lastDay: DateTime.utc(DateTime.now().year + 1),
+            focusedDay: _focusedDay,
+            calendarFormat: _calendarFormat,
+            selectedDayPredicate: (day) {
+              return isSameDay(_selectedDay, day);
+            },
+            onDaySelected: (selectedDay, focusedDay) {
+              setState(() {
+                _selectedDay = selectedDay;
+                _focusedDay = focusedDay;
+              });
+              // You can implement logic to update the tasks based on the selected date here
+            },
+          ),
+          BottomNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: (index) {
+              setState(() {
+                _currentIndex = index;
+              });
+            },
+            items: [
+              BottomNavigationBarItem(
+                icon: Icon(Icons.timer),
+                label: 'Doing',
+              ),
+              BottomNavigationBarItem(
+                icon: Icon(Icons.done_all),
+                label: 'Done',
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class Task {
+  final String project;
+  final String description;
+  final String dateDebut;
+  final String dateFin;
+
+  Task({
+    required this.project,
+    required this.description,
+    required this.dateDebut,
+    required this.dateFin,
+  });
+}
+
+class DoingContent extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Text("Content for Doing tab goes here");
+  }
+}
+
+class DoneContent extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Text("Content for Done tab goes here");
+  }
+}

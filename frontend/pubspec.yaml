@@ -52,7 +52,9 @@ dependencies:
   enough_mail: ^2.1.1
   email_validator: ^2.1.17
   url_launcher: ^6.1.12
-  
+  flutter_datetime_picker: ^1.4.0
+  date_time_picker: ^2.0.0
+  table_calendar: ^3.0.8
 
   #line_awesom_flutter: ^2.0.0
   #flutter_screenutil: ^1.0.2

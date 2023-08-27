@@ -9,6 +9,7 @@ import 'package:stage_project/Screens/Inquiries/inquiries.dart';
 import 'package:stage_project/Screens/Login/login_screen.dart';
 import 'package:stage_project/Screens/Settings/settings.dart';
 import 'package:stage_project/Screens/notifrep/notifrep.dart';
+import 'package:stage_project/Screens/tasks_calendar/calendar.dart';
 import 'package:stage_project/components/edit_button.dart';
 import 'package:stage_project/components/menu_profil.dart';
 import 'dart:io';
@@ -441,6 +442,15 @@ class _BodyState extends State<Body> {
                       'prenom': prenom,
                       'image': image,
                       'id': id,
+                    }),
+                isDarkMode: isDarkMode,
+              ),
+              UserScreenMenu(
+                title: "task schedule",
+                icon: LineAwesomeIcons.calendar,
+                onPress: () => Get.to(TasksCalendar(),
+                    arguments: {
+                      'cin': cin,
                     }),
                 isDarkMode: isDarkMode,
               ),
