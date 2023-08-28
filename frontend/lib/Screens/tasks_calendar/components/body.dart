@@ -25,12 +25,24 @@ class _BodyState extends State<Body> {
   DateTime _focusedDay = DateTime.now();
   DateTime _selectedDay = DateTime.now();
   Map<DateTime, List<TaskData>> _tasksByDate = {};
+  Future<void> _refreshPage() async {
+    // Delay for 2 seconds
+    await Future.delayed(Duration(seconds: 2));
 
+    // Perform any refresh-related tasks here
+    // For example, you might want to fetch updated data or update the UI
+    setState(() {
+      // Update your state here
+    });
+
+    // Call the refresh function again to repeat the process
+    _refreshPage();
+  }
   @override
   void initState() {
     super.initState();
     _futureTaskDataList = fetchTasks();
-
+    _refreshPage();
   }
   /*Future<List<TaskData>> fetchTasks() async {
     final response = await http.get(
@@ -57,14 +69,72 @@ class _BodyState extends State<Body> {
     }
   }
 */
+
+  Future<void> markTaskAsDone(int taskId) async {
+    final response = await http.post(
+      Uri.parse('https://9e9b-196-229-191-69.ngrok.io/enregistrer_tache_terminee/$taskId'),
+    );
+
+    print('Response Status Code: ${response.statusCode}');
+    print('Response Body: ${response.body}');
+
+    if (response.statusCode == 200) {
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title:  Row(
+              children: [
+                Icon(Icons.done, color: Colors.green), // Icône "Done"
+                SizedBox(width: 10), // Espacement entre l'icône et le texte
+              ],
+            ),
+            content: Text('Task marked as done successfully.'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: Text('OK'),
+              ),
+            ],
+          );
+        },
+      );
+    } else {
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            title: Row(
+              children: [
+                Icon(Icons.sms_failed_outlined, color: Colors.red), // Icône "Done"
+                SizedBox(width: 10), // Espacement entre l'icône et le texte
+              ],
+            ),
+            content: Text('Failed to mark task as done'),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                },
+                child: Text('OK'),
+              ),
+            ],
+          );
+        },
+      );
+    }
+  }
+
   Future<List<TaskData>> fetchTasks() async {
     final response = await http.get(
-      Uri.parse('https://96cd-196-228-57-39.ngrok.io/afficher_taches_par_employee/${widget.cin}'),
+      Uri.parse('https://9e9b-196-229-191-69.ngrok.io/afficher_taches_par_employee/${widget.cin}'),
     );
 
     if (response.statusCode == 200) {
       final data = json.decode(response.body);
-
+      print('API Response: $data');
       final taskDataList = List<TaskData>.from(data['taches_projets'].map(
             (item) => TaskData(
           projectSubject: item['projet_sujet'],
@@ -116,6 +186,7 @@ class _BodyState extends State<Body> {
       throw Exception('Failed to fetch data');
     }
   }
+  /*
   List<Map<String, dynamic>> getCurrentPageTasks() {
     final startIndex = _currentPage * _rowsPerPage;
     final endIndex = startIndex + _rowsPerPage;
@@ -136,7 +207,28 @@ class _BodyState extends State<Body> {
 
     return currentPageTasks;
   }
+*/
+  List<TaskWithId> getCurrentPageTasks() {
+    final startIndex = _currentPage * _rowsPerPage;
+    final endIndex = startIndex + _rowsPerPage;
+    final List<TaskWithId> currentPageTasks = [];
 
+    if (startIndex < _taskDataList.length) {
+      for (var i = startIndex; i < endIndex && i < _taskDataList.length; i++) {
+        for (var task in _taskDataList[i].tasks) {
+          currentPageTasks.add(TaskWithId(
+            projectSubject: _taskDataList[i].projectSubject,
+            tacheDescription: task['tache_description'],
+            tacheDateDebut: task['tache_date_debut'],
+            tacheDateFin: task['tache_date_fin'],
+            taskId: task['tache_id'],
+          ));
+        }
+      }
+    }
+
+    return currentPageTasks;
+  }
 
   void goToPage(int page) {
     setState(() {
@@ -173,11 +265,8 @@ class _BodyState extends State<Body> {
                       lastDay: DateTime.utc(2030, 12, 31),
                       focusedDay: _focusedDay,
                       calendarFormat: _calendarFormat,
-
                       calendarBuilders: CalendarBuilders(
-                        // Customize the marker color for each day with tasks
                         markerBuilder: (context, date, tasks) {
-                          // Compare dates ignoring time
                           if (_tasksByDate.keys.any((taskDate) => isSameDay(taskDate, date))) {
                             return Container(
                               margin: const EdgeInsets.all(3.5),
@@ -195,7 +284,6 @@ class _BodyState extends State<Body> {
                       selectedDayPredicate: (day) {
                         return isSameDay(_selectedDay, day);
                       },
-
                       onDaySelected: (selectedDay, focusedDay) {
                         setState(() {
                           _selectedDay = selectedDay;
@@ -219,15 +307,29 @@ class _BodyState extends State<Body> {
                         DataColumn(label: Text('Task')),
                         DataColumn(label: Text('Start')),
                         DataColumn(label: Text('End')),
+                        DataColumn(label: Text('Action')),
                       ],
                       rows: [
-                        for (var task in getCurrentPageTasks())
+                        for (var taskWithId in getCurrentPageTasks())
                           DataRow(
                             cells: [
-                              DataCell(Text('${task['projectSubject']}')),
-                              DataCell(Text('${task['tache_description']}')),
-                              DataCell(Text('${task['tache_date_debut']}')),
-                              DataCell(Text('${task['tache_date_fin']}')),
+                              DataCell(Text('${taskWithId.projectSubject}')),
+                              DataCell(Text('${taskWithId.tacheDescription}')),
+                              DataCell(Text('${taskWithId.tacheDateDebut}')),
+                              DataCell(Text('${taskWithId.tacheDateFin}')),
+                              DataCell(
+                                ElevatedButton(
+                                  onPressed: () {
+                                    final taskId = taskWithId.taskId;
+                                    if (taskId != null) {
+                                      markTaskAsDone(taskId);
+                                    } else {
+                                      print("Error: Task ID is null.");
+                                    }
+                                  },
+                                  child: Text('Mark as Done'),
+                                ),
+                              ),
                             ],
                           ),
                       ],
@@ -271,5 +373,22 @@ class TaskData {
   TaskData({
     required this.projectSubject,
     required this.tasks,
+  });
+}
+
+
+class TaskWithId {
+  final String projectSubject;
+  final String tacheDescription;
+  final String tacheDateDebut;
+  final String tacheDateFin;
+  final int taskId;
+
+  TaskWithId({
+    required this.projectSubject,
+    required this.tacheDescription,
+    required this.tacheDateDebut,
+    required this.tacheDateFin,
+    required this.taskId,
   });
 }

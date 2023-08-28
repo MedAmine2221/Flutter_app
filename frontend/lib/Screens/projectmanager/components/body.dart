@@ -77,7 +77,7 @@ class _BodyState extends State<Body> {
 
   Future<void> fetchEmployees() async {
     try {
-      final response = await http.get(Uri.parse('https://8891-160-159-254-108.ngrok.io/liste_employees'));
+      final response = await http.get(Uri.parse('https://9e9b-196-229-191-69.ngrok.io/liste_employees'));
 
       if (response.statusCode == 200) {
         final List<dynamic> responseData = json.decode(response.body);
@@ -92,7 +92,7 @@ class _BodyState extends State<Body> {
     }
   }
   Future<void> ajouterProjet() async {
-    String apiUrl = 'https://8891-160-159-254-108.ngrok.io/ajouter_projet';
+    String apiUrl = 'https://9e9b-196-229-191-69.ngrok.io/ajouter_projet';
     List<int> selectedEmployeeIds = employees.where((employee) => employee.isSelected).map((e) => e.id).toList();
 
     Map<String, dynamic> data = {
@@ -142,112 +142,121 @@ class _BodyState extends State<Body> {
       print('Error adding project: $e');
     }
   }
-
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
     return Background(
-      child: Column(
-        children: [
-          SizedBox(
-            width: 120,
-            height: 120,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(100),
-              child: Image.file(
-                File("${widget.image}"),
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            SizedBox(
+              width: 120,
+              height: 120,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(100),
+                child: Image.file(
+                  File(widget.image),
+                ),
               ),
             ),
-          ),
-          SizedBox(height: 10),
-          Text("${widget.nom} ${widget.prenom}",
-              style: Theme.of(context).textTheme.headlineSmall),
-          Text("${widget.email}",
-              style: Theme.of(context).textTheme.bodyLarge),
-          SizedBox(height: 20),
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 20),
-            child: Text(
-              'Add New Project',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+            SizedBox(height: 10),
+            Text(
+              "${widget.nom} ${widget.prenom}",
+              style: Theme.of(context).textTheme.headlineSmall,
+            ),
+            Text(
+              "${widget.email}",
+              style: Theme.of(context).textTheme.bodyLarge,
+            ),
+            SizedBox(height: 20),
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              child: Text(
+                'Add New Project',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
-          ),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            children: [
-              CustomDatePicker(
-                labelText: 'Date de début',
-                selectedDate: dateDebut,
-                onDateChanged: (newDate) {
-                  setState(() {
-                    dateDebut = newDate;
-                  });
-                },
-                backgroundColor: kPrimaryLightColor,
-              ),
-              CustomDatePicker(
-                labelText: 'Date de fin',
-                selectedDate: dateFin,
-                onDateChanged: (newDate) {
-                  setState(() {
-                    dateFin = newDate;
-                  });
-                },
-                backgroundColor: kPrimaryLightColor,
-              ),
-            ],
-          ),
-          Flexible(
-            child: ListView.builder(
-              itemCount: employees.length,
-              itemBuilder: (context, index) {
-                final employee = employees[index];
-                return ListTile(
-                  leading: Container(
-                    width: 50,
-                    height: 50,
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.all(color: Colors.grey),
+            SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                CustomDatePicker(
+                  labelText: 'Date de début',
+                  selectedDate: dateDebut,
+                  onDateChanged: (newDate) {
+                    setState(() {
+                      dateDebut = newDate;
+                    });
+                  },
+                  backgroundColor: kPrimaryLightColor,
+                ),
+                CustomDatePicker(
+                  labelText: 'Date de fin',
+                  selectedDate: dateFin,
+                  onDateChanged: (newDate) {
+                    setState(() {
+                      dateFin = newDate;
+                    });
+                  },
+                  backgroundColor: kPrimaryLightColor,
+                ),
+              ],
+            ),
+            Container(
+              height: 300, // Hauteur fixe pour la liste des employés
+              child: ListView.builder(
+                itemCount: employees.length,
+                itemBuilder: (context, index) {
+                  final employee = employees[index];
+                  return ListTile(
+                    leading: Container(
+                      width: 50,
+                      height: 50,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.grey),
+                      ),
+                      child: ClipOval(
+                        child: employee.image.startsWith("http")
+                            ? Image.network(employee.image, fit: BoxFit.cover)
+                            : Image.file(
+                          File(employee.image),
+                          fit: BoxFit.cover,
+                        ),
+                      ),
                     ),
-                    child: ClipOval(
-                      child: employee.image.startsWith("http")
-                          ? Image.network(employee.image, fit: BoxFit.cover)
-                          : Image.file(File(employee.image), fit: BoxFit.cover),
+                    title: Text('${employee.firstname} ${employee.lastname}'),
+                    trailing: Checkbox(
+                      value: employee.isSelected,
+                      onChanged: (value) {
+                        setState(() {
+                          employee.isSelected = value!;
+                        });
+                      },
                     ),
-                  ),
-                  title: Text('${employee.firstname} ${employee.lastname}'),
-                  trailing: Checkbox(
-                    value: employee.isSelected,
-                    onChanged: (value) {
-                      setState(() {
-                        employee.isSelected = value!;
-                      });
-                    },
-                  ),
-                );
+                  );
+                },
+              ),
+            ),
+
+            ProjectRoundedField(
+              hintText: 'Enter The project description',
+              controller: sujetController,
+              onChanged: (value) {
+                // Gérez le changement de valeur du champ texte ici
               },
             ),
-          ),
-          SizedBox(height: 16),
-          ProjectRoundedField(
-            hintText: 'Enter The project description',
-            controller: sujetController,
-            onChanged: (value) {
-              // Gérez le changement de valeur du champ texte ici
-            },
-          ),
-          SizedBox(height: 16),
-          RoundedButton(
-            text: 'Add Project',
-            press: () {
-              ajouterProjet();
-            },
-          ),
-        ],
+            RoundedButton(
+              text: 'Add Project',
+              press: () {
+                ajouterProjet();
+              },
+            ),
+          ],
+        ),
       ),
     );
   }

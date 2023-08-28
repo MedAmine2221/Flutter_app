@@ -190,7 +190,7 @@ class _BodyState extends State<Body> {
     }
   }
   Future<void> fetchEmployees() async {
-    final response = await http.get(Uri.parse('https://5e66-160-159-254-108.ngrok.io/afficher_employees'));
+    final response = await http.get(Uri.parse('https://dcd3-196-229-191-69.ngrok.io/afficher_employees'));
 
     if (response.statusCode == 200) {
       setState(() {
@@ -450,12 +450,12 @@ class _BodyState extends State<Body> {
                     cells: [
                       DataCell(Text((index + 1 + (currentPage - 1) * itemsPerPage).toString())),
                       DataCell(
-                        Image.file(
-                          File(employee['image']),
-                          width: 50,
-                          height: 50,
-                          fit: BoxFit.cover,
-                        ),),
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(0),
+                            child: employee['image'].startsWith("http") // Vérifie si l'image est une URL
+                                ? Image.network(employee['image']) // Affiche l'image réseau s'il s'agit d'une URL
+                                : Image.file(File(employee['image'])), // Affiche l'image locale sinon
+                          ),),
                       DataCell(Text(employee['cin'])),
                       DataCell(Text(employee['nom'])),
                       DataCell(Text(employee['prenom'])),

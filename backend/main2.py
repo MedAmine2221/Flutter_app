@@ -5,6 +5,8 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_restful import Api, Resource
 from flasgger import Swagger, swag_from
 from flask_cors import CORS
+import datetime
+
 
 app = Flask(__name__)
 CORS(app) 
@@ -1239,7 +1241,7 @@ def afficher_taches_par_employee(employee_cin):
     conn, cursor = get_cursor_and_connection()
 
     # Récupérer les tâches et projets associés à l'employé
-    cursor.execute("SELECT projet.sujet, tache.description, tache.date_debut, tache.date_fin "
+    cursor.execute("SELECT projet.sujet, tache.id, tache.description, tache.date_debut, tache.date_fin "
                    "FROM projet "
                    "JOIN tache ON tache.projet_id = projet.id "
                    "WHERE tache.employee_id = (SELECT id FROM employee WHERE cin = %s)", (employee_cin,))
@@ -1252,14 +1254,14 @@ def afficher_taches_par_employee(employee_cin):
         current_project = None
         current_tasks = []
 
-        for project, task, date_debut, date_fin in tasks_and_projects:
+        for project, task_id, task, date_debut, date_fin in tasks_and_projects:
             if project != current_project:
                 if current_project:
                     result.append({'projet_sujet': current_project, 'taches': current_tasks})
                 current_project = project
                 current_tasks = []
 
-            current_tasks.append({'tache_description': task, 'tache_date_debut': date_debut, 'tache_date_fin': date_fin})
+            current_tasks.append({'tache_id': task_id, 'tache_description': task, 'tache_date_debut': date_debut, 'tache_date_fin': date_fin})
 
         if current_project:
             result.append({'projet_sujet': current_project, 'taches': current_tasks})
@@ -1267,5 +1269,68 @@ def afficher_taches_par_employee(employee_cin):
         return jsonify({'taches_projets': result}), 200
     else:
         return jsonify({"message": "Employé non trouvé ou non associé à des tâches ou des projets"}), 404
+    
+@app.route('/enregistrer_tache_terminee/<int:tache_id>', methods=['GET','POST'])
+def enregistrer_tache_terminee(tache_id):
+    try:
+        conn, cursor = get_cursor_and_connection()
+
+        # Récupérer les détails de la tâche
+        cursor.execute("SELECT * FROM tache WHERE id = %s", (tache_id,))
+        tache = cursor.fetchone()
+
+        if tache:
+            projet_id = tache[1]
+            employee_id = tache[2]
+            date_debut = tache[3]
+            date_fin = tache[4]
+            description = tache[5]
+            date_creation = datetime.datetime.now().date()  # Utilise la date d'aujourd'hui
+
+            # Insérer la tâche terminée dans la table "done"
+            cursor.execute("INSERT INTO done (projet_id, employee_id, date_debut, date_fin, description, date_creation) "
+                           "VALUES (%s, %s, %s, %s, %s, %s)",
+                           (projet_id, employee_id, date_debut, date_fin, description, date_creation))
+            
+            # Supprimer la tâche de la table "tache"
+            cursor.execute("DELETE FROM tache WHERE id = %s", (tache_id,))
+            
+            conn.commit()
+            close_connection(conn, cursor)
+            return jsonify({"message": "Tâche enregistrée comme terminée et supprimée de la liste des tâches."}), 200
+        else:
+            return jsonify({"message": "Tâche non trouvée"}), 404
+    except Exception as e:
+        return jsonify(error=str(e)), 500
+
+
+@app.route('/afficher_taches_terminees', methods=['GET'])
+def afficher_taches_terminees():
+    try:
+        conn, cursor = get_cursor_and_connection()
+
+        # Récupérer les tâches terminées depuis la table "done"
+        cursor.execute("SELECT * FROM done")
+        taches_terminees = cursor.fetchall()
+
+        # Convertir les résultats en une liste de dictionnaires pour une représentation JSON
+        taches_terminees_list = []
+        for tache in taches_terminees:
+            tache_dict = {
+                'id': tache[0],
+                'projet_id': tache[1],
+                'employee_id': tache[2],
+                'date_debut': tache[3].isoformat(),
+                'date_fin': tache[4].isoformat(),
+                'description': tache[5],
+                'date_creation': tache[6].isoformat()
+            }
+            taches_terminees_list.append(tache_dict)
+
+        close_connection(conn, cursor)
+        return jsonify(taches_terminees_list), 200
+    except Exception as e:
+        return jsonify(error=str(e)), 500
+
 if __name__ == '__main__':
     app.run(debug=True)

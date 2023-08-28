@@ -254,9 +254,13 @@ class _BodyState extends State<Body> {
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
 
-              SvgPicture.asset(
-                "assets/icons/signup.svg",
-                height: size.height * 0.2,
+              ClipRRect(
+                borderRadius: BorderRadius.circular(10), // Ajustez le rayon du coin arrondi selon vos préférences
+                child: Image.asset(
+                  "assets/images/reg.jpg",
+                  height: size.height * 0.4,
+                  fit: BoxFit.cover, // Assurez-vous que l'image s'adapte correctement au coin arrondi
+                ),
               ),
               SizedBox(
                 height: size.height * 0.03,

@@ -17,7 +17,7 @@ class CustomDatePicker extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 200, // Adjust the width as needed
+      width: 150, // Adjust the width as needed
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: backgroundColor, // Use the provided background color
@@ -58,7 +58,7 @@ class CustomDatePicker extends StatelessWidget {
             child: Row(
               children: [
                 Icon(LineAwesomeIcons.calendar, color: Colors.blue),
-                SizedBox(width: 8),
+                SizedBox(width: 2),
                 Text(
                   "${selectedDate.toLocal()}".split(' ')[0],
                   style: TextStyle(

@@ -20,7 +20,14 @@ class Body extends StatelessWidget{
               style: TextStyle(fontWeight: FontWeight.bold),
             ),
             SizedBox(height: size.height * 0.03,),
-            SvgPicture.asset("assets/icons/chat.svg",height: size.height * 0.45,),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(80), // Ajustez le rayon du coin arrondi selon vos préférences
+              child: Image.asset(
+                "assets/images/aab.png",
+                height: size.height * 0.4,
+                fit: BoxFit.cover, // Assurez-vous que l'image s'adapte correctement au coin arrondi
+              ),
+            ),
             SizedBox(height: size.height * 0.05,),
             RoundedButton(
               text: "LOGIN",

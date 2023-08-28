@@ -40,6 +40,7 @@ class Body extends StatefulWidget {
 }
 
 class _BodyState extends State<Body> {
+
   DateTime dateDebut = DateTime.now();
   DateTime dateFin = DateTime.now();
   TextEditingController sujetController = TextEditingController();
@@ -130,7 +131,7 @@ class _BodyState extends State<Body> {
 
   Future<void> fetchEmployees() async {
     try {
-      final response = await http.get(Uri.parse('https://8891-160-159-254-108.ngrok.io/liste_employees'));
+      final response = await http.get(Uri.parse('https://9e9b-196-229-191-69.ngrok.io/liste_employees'));
 
       if (response.statusCode == 200) {
         final List<dynamic> responseData = json.decode(response.body);
@@ -152,7 +153,7 @@ class _BodyState extends State<Body> {
     }
   }
   Future<void> ajouterProjet() async {
-    String apiUrl = 'https://8891-160-159-254-108.ngrok.io/ajouter_tache';
+    String apiUrl = 'https://9e9b-196-229-191-69.ngrok.io/ajouter_tache';
 
     Map<String, dynamic> data = {
       'projet_id': widget.id,
@@ -251,6 +252,9 @@ class _BodyState extends State<Body> {
     Employee selectedEmployee = employees[currentEmployeeIndex];
     return Background(
       //child: EdgeInsets.symmetric(horizontal: 20),
+        child: SingleChildScrollView(
+        child: Padding(
+        padding: const EdgeInsets.all(16.0),
       child: Column(
         children: [
           SizedBox(
@@ -322,6 +326,8 @@ class _BodyState extends State<Body> {
           ),
         ],
       ),
+    ),
+        ),
     );
   }
 }
