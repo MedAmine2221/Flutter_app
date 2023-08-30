@@ -1304,33 +1304,5 @@ def enregistrer_tache_terminee(tache_id):
         return jsonify(error=str(e)), 500
 
 
-@app.route('/afficher_taches_terminees', methods=['GET'])
-def afficher_taches_terminees():
-    try:
-        conn, cursor = get_cursor_and_connection()
-
-        # Récupérer les tâches terminées depuis la table "done"
-        cursor.execute("SELECT * FROM done")
-        taches_terminees = cursor.fetchall()
-
-        # Convertir les résultats en une liste de dictionnaires pour une représentation JSON
-        taches_terminees_list = []
-        for tache in taches_terminees:
-            tache_dict = {
-                'id': tache[0],
-                'projet_id': tache[1],
-                'employee_id': tache[2],
-                'date_debut': tache[3].isoformat(),
-                'date_fin': tache[4].isoformat(),
-                'description': tache[5],
-                'date_creation': tache[6].isoformat()
-            }
-            taches_terminees_list.append(tache_dict)
-
-        close_connection(conn, cursor)
-        return jsonify(taches_terminees_list), 200
-    except Exception as e:
-        return jsonify(error=str(e)), 500
-
 if __name__ == '__main__':
     app.run(debug=True)

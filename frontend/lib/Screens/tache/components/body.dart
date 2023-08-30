@@ -8,6 +8,7 @@ import 'package:stage_project/Screens/projectmanager/components/background.dart'
 import 'dart:io';
 import 'package:get/get.dart';
 import 'package:stage_project/Screens/projectmanager/project_management.dart';
+import 'package:stage_project/components/custom-date_field.dart';
 
 import 'package:stage_project/Screens/tache/project_tasks.dart';
 import 'package:stage_project/components/project_text_field.dart';
@@ -46,8 +47,33 @@ class _BodyState extends State<Body> {
   TextEditingController sujetController = TextEditingController();
   List<Employee> employees = [];
   int currentEmployeeIndex = 0;
+  bool _isWidgetActive = true; // Add this at the beginning of your _BodyState class
 
   Future<void> _refreshPage() async {
+    // Exit the function if the widget has been disposed
+    if (!_isWidgetActive) return;
+
+    // Delay for 2 seconds
+    await Future.delayed(Duration(seconds: 2));
+
+    // Perform any refresh-related tasks here
+    // For example, you might want to fetch updated data or update the UI
+    setState(() {
+      // Update your state here
+    });
+
+    // Call the refresh function again if the widget is still active
+    if (_isWidgetActive) {
+      _refreshPage();
+    }
+  }
+
+  @override
+  void dispose() {
+    _isWidgetActive = false; // Set the flag to false when the widget is disposed
+    super.dispose();
+  }
+  /*Future<void> _refreshPage() async {
     // Delay for 2 seconds
     await Future.delayed(Duration(seconds: 2));
 
@@ -59,7 +85,7 @@ class _BodyState extends State<Body> {
 
     // Call the refresh function again to repeat the process
     _refreshPage();
-  }
+  }*/
 
 
   Future<void> _selectDateDebut(BuildContext context) async {
@@ -131,7 +157,7 @@ class _BodyState extends State<Body> {
 
   Future<void> fetchEmployees() async {
     try {
-      final response = await http.get(Uri.parse('https://9e9b-196-229-191-69.ngrok.io/liste_employees'));
+      final response = await http.get(Uri.parse('https://6d08-160-156-230-7.ngrok.io/liste_employees'));
 
       if (response.statusCode == 200) {
         final List<dynamic> responseData = json.decode(response.body);
@@ -152,8 +178,49 @@ class _BodyState extends State<Body> {
       print('Error fetching employees: $e');
     }
   }
+  /*
   Future<void> ajouterProjet() async {
-    String apiUrl = 'https://9e9b-196-229-191-69.ngrok.io/ajouter_tache';
+    String apiUrl = 'https://6d08-160-156-230-7.ngrok.io/ajouter_tache';
+
+    Map<String, dynamic> data = {
+      'projet_id': widget.id,
+      'employee_id': employees[currentEmployeeIndex].id,
+      'date_debut': dateDebut.toIso8601String(),
+      'date_fin': dateFin.toIso8601String(),
+      'description': sujetController.text,
+    };
+
+    try {
+      final response = await http.post(
+        Uri.parse(apiUrl),
+        headers: {'Content-Type': 'application/json'},
+        body: jsonEncode(data),
+      );
+
+      if (response.statusCode == 201) {
+        if (currentEmployeeIndex < widget.selectedEmployees.length - 1) {
+          setState(() {
+            currentEmployeeIndex++;
+            _resetForm();
+          });
+        } else {
+          _showSuccessAlert(context);
+        }
+      } else {
+        _showAlertFailed(context);
+      }
+    } catch (e) {
+      print('Error adding project: $e');
+    }
+  }*/
+  Future<void> ajouterProjet() async {
+    // Vérification de champs non vides
+    if (sujetController.text.isEmpty) {
+      _showAlertEmptyFields(context);
+      return;
+    }
+
+    String apiUrl = 'https://6d08-160-156-230-7.ngrok.io/ajouter_tache';
 
     Map<String, dynamic> data = {
       'projet_id': widget.id,
@@ -187,6 +254,34 @@ class _BodyState extends State<Body> {
     }
   }
 
+  void _showAlertEmptyFields(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.warning, color: Colors.red, size: 100),
+              SizedBox(height: 10),
+              Text(
+                'Fields cannot be empty',
+                style: TextStyle(fontSize: 16),
+              ),
+            ],
+          ),
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
   void _resetForm() {
     setState(() {
       dateDebut = DateTime.now();
@@ -194,6 +289,7 @@ class _BodyState extends State<Body> {
       sujetController.clear();
     });
   }
+  /*
   void _showSuccessAlert(BuildContext context) {
     showDialog(
       context: context,
@@ -232,7 +328,52 @@ class _BodyState extends State<Body> {
       },
     );
   }
+*/
+  void _showSuccessAlert(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          // ... contenu de l'alerte ...
+          actions: [
+            ElevatedButton(
+              onPressed: () {
+                _resetForm();
 
+                // Passer au prochain employé (ou revenir au premier)
+                if (currentEmployeeIndex < widget.selectedEmployees.length - 1) {
+                  setState(() {
+                    currentEmployeeIndex++;
+                  });
+                } else {
+                  currentEmployeeIndex = 0; // Revenir au premier employé
+                }
+
+                Navigator.of(context).pop();
+              },
+              child: Text('Add Another Task'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Get.to(AcceuilScreen(),
+                    arguments: {
+                      'email': widget.email,
+                      'nom': widget.nom,
+                      'prenom': widget.prenom,
+                      'cin': widget.cin,
+                      'image': widget.image,
+                      'role': widget.role,
+                      'id': widget.idconn
+                    }
+                );
+              },
+              child: Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
   @override
   Widget build(BuildContext context) {
     Size size = MediaQuery.of(context).size;
@@ -276,6 +417,28 @@ class _BodyState extends State<Body> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
+              CustomDatePicker(
+                labelText: 'Start',
+                selectedDate: dateDebut,
+                onDateChanged: (newDate) {
+                  setState(() {
+                    dateDebut = newDate;
+                  });
+                },
+                backgroundColor: kPrimaryLightColor,
+              ),
+              CustomDatePicker(
+                labelText: 'End',
+                selectedDate: dateFin,
+                onDateChanged: (newDate) {
+                  setState(() {
+                    dateFin = newDate;
+                  });
+                },
+                backgroundColor: kPrimaryLightColor,
+              ),
+
+              /*
               ElevatedButton.icon(
                 onPressed: () => _selectDateDebut(context),
                 style: ElevatedButton.styleFrom(
@@ -305,7 +468,7 @@ class _BodyState extends State<Body> {
                   '${DateFormat('dd/MM/yyyy').format(dateFin)}',
                   style: TextStyle(color: Colors.white),
                 ),
-              ),
+              ),*/
             ],
           ),
           SizedBox(height: size.height * 0.03),

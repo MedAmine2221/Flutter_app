@@ -45,6 +45,35 @@ class _BodyState extends State<Body> {
     super.initState();
     fetchEmployees();
   }
+  void _showAlertFieldsRequired(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.warning,
+                color: Colors.orange,
+                size: 50,
+              ),
+              SizedBox(height: 10),
+              Text('Please fill all the required fields', style: TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+          actions: [
+            RoundedButton(
+              text: 'Close',
+              press: () {
+                Navigator.of(context).pop(); // Ferme l'alerte
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
   void _showAlertFailed(BuildContext context) {
     showDialog(
       context: context,
@@ -77,7 +106,7 @@ class _BodyState extends State<Body> {
 
   Future<void> fetchEmployees() async {
     try {
-      final response = await http.get(Uri.parse('https://9e9b-196-229-191-69.ngrok.io/liste_employees'));
+      final response = await http.get(Uri.parse('https://6d08-160-156-230-7.ngrok.io/liste_employees'));
 
       if (response.statusCode == 200) {
         final List<dynamic> responseData = json.decode(response.body);
@@ -92,7 +121,7 @@ class _BodyState extends State<Body> {
     }
   }
   Future<void> ajouterProjet() async {
-    String apiUrl = 'https://9e9b-196-229-191-69.ngrok.io/ajouter_projet';
+    String apiUrl = 'https://6d08-160-156-230-7.ngrok.io/ajouter_projet';
     List<int> selectedEmployeeIds = employees.where((employee) => employee.isSelected).map((e) => e.id).toList();
 
     Map<String, dynamic> data = {
@@ -130,7 +159,7 @@ class _BodyState extends State<Body> {
                 'role': widget.role,
                 'idconn': widget.id
 
-          });
+              });
         } else {
           // Handle the case where project_id is missing or null
           _showAlertFailed(context);
@@ -184,7 +213,7 @@ class _BodyState extends State<Body> {
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: [
                 CustomDatePicker(
-                  labelText: 'Date de début',
+                  labelText: 'Start',
                   selectedDate: dateDebut,
                   onDateChanged: (newDate) {
                     setState(() {
@@ -194,7 +223,7 @@ class _BodyState extends State<Body> {
                   backgroundColor: kPrimaryLightColor,
                 ),
                 CustomDatePicker(
-                  labelText: 'Date de fin',
+                  labelText: 'End',
                   selectedDate: dateFin,
                   onDateChanged: (newDate) {
                     setState(() {
@@ -252,7 +281,11 @@ class _BodyState extends State<Body> {
             RoundedButton(
               text: 'Add Project',
               press: () {
-                ajouterProjet();
+                if (dateDebut == null || dateFin == null || sujetController.text.isEmpty || employees.where((employee) => employee.isSelected).isEmpty) {
+                  _showAlertFieldsRequired(context);
+                } else {
+                  ajouterProjet();
+                }
               },
             ),
           ],
